@@ -40,11 +40,13 @@ def profile(request, username):
     posts = Post.objects.select_related('author').filter(author=author)
     post_amount = posts.count()
     page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
-    user = User.objects.get(username=request.user)
-    if Follow.objects.filter(user__exact=user, author__exact=author):
-        following = True
-    else:
-        following = False
+    following = True
+    if request.user.is_authenticated:
+        user = User.objects.get(username=request.user)
+        if Follow.objects.filter(user__exact=user, author__exact=author):
+            following = True
+        else:
+            following = False
     context = {'page_obj': page_obj,
                'author': author,
                'post_amount': post_amount,
@@ -116,7 +118,6 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Выводит посты авторов на которых подписан пользователь"""
     posts = Post.objects.filter(author__following__user=request.user)
-    print(Post.objects.filter(author__following__user__exact=request.user).query)
     page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
     context = {'page_obj': page_obj, }
     return render(request, 'posts/follow.html', context)

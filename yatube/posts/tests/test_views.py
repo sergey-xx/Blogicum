@@ -19,6 +19,7 @@ class PostsPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.author = User.objects.create_user(username='author')
+        cls.reader = User.objects.create_user(username='reader')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
@@ -69,8 +70,10 @@ class PostsPagesTests(TestCase):
         cls.ABOUT_AUTHOR_URL = reverse('about:author')
         cls.LOGOUT_URL = reverse('users:logout')
         cls.LOGIN_URL = reverse('users:login')
-        cls.FOLLOW_INDEX_URL: reverse('posts:follow_index',
-                                      kwargs={'post_id': cls.post.id})
+        cls.FOLLOW_INDEX_URL = reverse('posts:follow_index')
+        cls.FOLLOW_URL = reverse('posts:profile_follow', kwargs={'username': cls.author.username})
+        cls.UNFOLLOW_URL = reverse('posts:profile_unfollow', kwargs={'username': cls.author.username})
+
 
     def setUp(self):
         """Создаем авторизованный клиент"""
@@ -89,10 +92,10 @@ class PostsPagesTests(TestCase):
             self.INDEX_URL: 'posts/index.html',
             self.ABOUT_TECH_URL: 'about/about_tech.html',
             self.ABOUT_AUTHOR_URL: 'about/about_author.html',
+            self.FOLLOW_INDEX_URL: 'posts/follow.html',
             self.LOGOUT_URL: 'users/logged_out.html',
             self.LOGIN_URL: 'users/login.html',
             self.PAGE_404: 'core/404.html',
-            self.FOLLOW_URL: 'posts/follow.html'
         }
         for url, template in templates.items():
             with self.subTest(f'Приложение {url} использует шаблон {template}',
@@ -228,11 +231,16 @@ class PostsPagesTests(TestCase):
         self.assertNotEqual(response_0.content, response_2.content)
 
     def test_follow(self):
-        response_0 = self.authorized_client.get(self.INDEX_URL)
-
-    def test_unfollow(self):
-        pass
-
+        """Тестирование подписки и отписки"""
+        self.authorized_reader = Client()
+        self.authorized_reader.force_login(self.reader)
+        response_0 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        response = self.authorized_reader.get(self.FOLLOW_URL)
+        response_1 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        self.assertNotEqual(response_0.content, response_1.content)
+        response = self.authorized_reader.get(self.UNFOLLOW_URL)
+        response_2 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        self.assertEqual(response_0.content, response_2.content)
 
 
 class PaginatorViewTest(TestCase):

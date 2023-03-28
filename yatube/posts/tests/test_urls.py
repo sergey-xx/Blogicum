@@ -61,9 +61,6 @@ class StaticPagesURLTests(TestCase):
 
     def test_about_url_exists_at_desired_location(self):
         """Проверка доступности адресов ."""
-        print('>>>>>>>>>>>>>')
-        print(self.user.__dict__)
-
         for tested_url in self.FREE_TO_ACCES_URLS:
             with self.subTest(tested_url=tested_url):
                 response = self.guest_client.get(tested_url)
