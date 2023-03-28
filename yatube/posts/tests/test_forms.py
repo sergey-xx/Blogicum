@@ -10,6 +10,7 @@ from django.core.cache import cache
 from posts.models import Group, Post, Comment
 from django.conf import settings
 
+
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -29,10 +30,10 @@ class PostCreateFormTests(TestCase):
             text='12345678901234567890',
             group=cls.group)
         cls.comment = Comment.objects.create(
-            author = cls.author,
-            text = 'Тестовый комментарий',
-            post = cls.post)
-        
+            author=cls.author,
+            text='Тестовый комментарий',
+            post=cls.post)
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -47,13 +48,13 @@ class PostCreateFormTests(TestCase):
     def test_create_post(self):
         """Создание поста авторизованным пользователем"""
         posts_count = Post.objects.count()
-        small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -114,32 +115,20 @@ class PostCreateFormTests(TestCase):
         """Возможность создания комментария авторизованным пользователем"""
         comments_count_0 = self.post.comments.all().count()
         data = {'text': 'Тестовый комментарий 2'}
-        response = self.authorized_client.post(
-            reverse('posts:add_comment',  kwargs={'post_id': self.post.id}),
-            data = data
-            )
+        self.authorized_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            data=data)
         comments_count_1 = self.post.comments.all().count()
         self.assertEqual(comments_count_0 + 1, comments_count_1)
         self.assertEqual(self.post.comments.all()[1].text, data['text'])
-    
+
     def test_not_comment_post(self):
         """Невозможность создания комментария неавторизованным пользователем"""
         comments_count_0 = self.post.comments.all().count()
         guest_client = Client()
         data = {'text': 'Тестовый комментарий 2'}
-        response = guest_client.post(
-            reverse('posts:add_comment',  kwargs={'post_id': self.post.id}),
-            data = data
-            )
+        guest_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            data=data)
         comments_count_1 = self.post.comments.all().count()
         self.assertEqual(comments_count_0, comments_count_1)
-        # form_data = {'text': 'some_text2',
-        #              'group': self.group.id}
-        # response = guest_client.post(
-        #     reverse('posts:post_create'),
-        #     data=form_data,
-        #     follow=True)
-        # expected_redirect = (reverse('users:login') + '?next='
-        #                      + reverse('posts:post_create'))
-        # self.assertRedirects(response, expected_redirect)
-        # self.assertEqual(Post.objects.count(), post_count)

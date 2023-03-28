@@ -10,21 +10,23 @@
     {% comment %} <a href="{% url 'posts:profile_follow' author %}">Подписаться </a>
     <p> </p>
     <a href="{% url 'posts:profile_unfollow' author %}">Отписаться </a> {% endcomment %}
+    {% if request.user.is_authenticated %}
     {% if following %}
     <a
-      class="btn btn-lg btn-light"
-      href="{% url 'posts:profile_unfollow' author.username %}" role="button"
+    class="btn btn-lg btn-light"
+    href="{% url 'posts:profile_unfollow' author.username %}" role="button"
     >
-      Отписаться
-    </a>
+    Отписаться
+  </a>
   {% else %}
-      <a
-        class="btn btn-lg btn-primary"
-        href="{% url 'posts:profile_follow' author.username %}" role="button"
-      >
-        Подписаться
-      </a>
-   {% endif %}
+  <a
+  class="btn btn-lg btn-primary"
+  href="{% url 'posts:profile_follow' author.username %}" role="button"
+  >
+  Подписаться
+</a>
+{% endif %}
+{% endif %}
     <article>
       {% for post in page_obj %}
         <ul>

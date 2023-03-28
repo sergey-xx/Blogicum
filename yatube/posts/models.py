@@ -5,8 +5,6 @@ from django.conf import settings
 User = get_user_model()
 
 
-
-
 class Group(models.Model):
     title = models.CharField('Имя группы', max_length=200)
     slug = models.SlugField('Слаг группы', max_length=20, unique=True)
@@ -68,6 +66,7 @@ class Comment(models.Model):
                             help_text='Введите текст комментария')
     pub_date = models.DateTimeField('Дата комментария', auto_now_add=True)
 
+
 class Follow(models.Model):
     user = models.ForeignKey(
         User,
@@ -83,6 +82,7 @@ class Follow(models.Model):
         blank=True,
         null=True,
     )
+
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['user', 'author'],

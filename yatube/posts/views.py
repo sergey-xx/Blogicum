@@ -8,11 +8,13 @@ from django.conf import settings
 from .models import Group, Post, User, Follow
 from .forms import PostForm, CommentForm
 
+
 def pagination(request, some_objs, obj_on_page):
     """Возвращает выбранное количество постов на странице"""
     paginator = Paginator(some_objs, obj_on_page)
     page_number = request.GET.get('page')
     return paginator.get_page(page_number)
+
 
 def group_posts(request, slug):
     """Отображает все посты выбранной группы"""
@@ -25,6 +27,7 @@ def group_posts(request, slug):
     }
     return render(request, 'posts/group_list.html', context)
 
+
 @cache_page(20, key_prefix='index_page')
 def index(request):
     """Отображает посты в хронологическом порядке"""
@@ -33,6 +36,7 @@ def index(request):
     context = {'page_obj': page_obj, }
     template = 'posts/index.html'
     return render(request, template, context)
+
 
 def profile(request, username):
     """Отображает все посты пользователя"""
@@ -53,6 +57,7 @@ def profile(request, username):
                'following': following,
                }
     return render(request, 'posts/profile.html', context)
+
 
 @login_required
 def post_create(request):
@@ -77,7 +82,7 @@ def post_detail(request, post_id):
     form = CommentForm(request.POST or None)
     context = {'post': post,
                'post_amount': post_amount,
-               'comments': post.comments.all(), 
+               'comments': post.comments.all(),
                'form': form}
     return render(request, 'posts/post_detail.html', context)
 
@@ -103,6 +108,7 @@ def post_edit(request, post_id):
     }
     return render(request, 'posts/post_create_form.html', context)
 
+
 @login_required
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -114,6 +120,7 @@ def add_comment(request, post_id):
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
 
+
 @login_required
 def follow_index(request):
     """Выводит посты авторов на которых подписан пользователь"""
@@ -122,18 +129,18 @@ def follow_index(request):
     context = {'page_obj': page_obj, }
     return render(request, 'posts/follow.html', context)
 
+
 @login_required
 def profile_follow(request, username):
     """Подписаться на автора"""
     # user = User.objects.get(username=request.user)
     author = User.objects.get(username=username)
     if (not Follow.objects.filter(user__exact=request.user,
-                                 author__exact=author)
-                                 and author != request.user):
+                                  author__exact=author)
+       and author != request.user):
         Follow.objects.create(user=request.user, author=author)
-        print('!!!!!!!!!!')
-    return redirect('posts:profile', username=username)
-    ...
+        return redirect('posts:profile', username=username)
+
 
 @login_required
 def profile_unfollow(request, username):
@@ -142,5 +149,4 @@ def profile_unfollow(request, username):
     author = User.objects.get(username=username)
     if Follow.objects.filter(user__exact=user, author__exact=author):
         Follow.objects.get(user=user, author=author).delete()
-        print(Follow.objects.filter(user__exact=user, author__exact=author))
-    return redirect('posts:profile', username=username)
+        return redirect('posts:profile', username=username)

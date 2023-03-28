@@ -4,8 +4,6 @@ from django.urls import reverse
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
-# from django.views.defaults import page_not_found, permission_denied
-from core.views import page_not_found
 
 from posts.models import Group, Post, Comment
 from django.conf import settings
@@ -25,30 +23,28 @@ class PostsPagesTests(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
-        small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
-        )
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B')
+
         uploaded = SimpleUploadedFile(
             name='small.gif',
             content=small_gif,
-            content_type='image/gif')
+            content_type='image/gif', )
 
         cls.post = Post.objects.create(
             author=cls.author,
             text='12345678901234567890',
             group=cls.group,
-            image=uploaded,
-        )
+            image=uploaded, )
         cls.comment = Comment.objects.create(
-            author = cls.author,
-            text = 'Тестовый комментарий',
-            post = cls.post
-        )
+            author=cls.author,
+            text='Тестовый комментарий',
+            post=cls.post, )
 
         cls.POST_CREATE_URL = reverse('posts:post_create')
         cls.POST_REVERSE_URL = reverse('posts:post_edit',
@@ -63,7 +59,7 @@ class PostsPagesTests(TestCase):
 
         cls.POST_DETAIL_URL = reverse('posts:post_detail',
                                       kwargs={'post_id': cls.post.id})
-        
+
         cls.PAGE_404 = '/non_existing/'
         cls.INDEX_URL = reverse('posts:index')
         cls.ABOUT_TECH_URL = reverse('about:tech')
@@ -71,9 +67,10 @@ class PostsPagesTests(TestCase):
         cls.LOGOUT_URL = reverse('users:logout')
         cls.LOGIN_URL = reverse('users:login')
         cls.FOLLOW_INDEX_URL = reverse('posts:follow_index')
-        cls.FOLLOW_URL = reverse('posts:profile_follow', kwargs={'username': cls.author.username})
-        cls.UNFOLLOW_URL = reverse('posts:profile_unfollow', kwargs={'username': cls.author.username})
-
+        cls.FOLLOW_URL = reverse('posts:profile_follow',
+                                 kwargs={'username': cls.author.username})
+        cls.UNFOLLOW_URL = reverse('posts:profile_unfollow',
+                                   kwargs={'username': cls.author.username})
 
     def setUp(self):
         """Создаем авторизованный клиент"""
@@ -235,12 +232,41 @@ class PostsPagesTests(TestCase):
         self.authorized_reader = Client()
         self.authorized_reader.force_login(self.reader)
         response_0 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
-        response = self.authorized_reader.get(self.FOLLOW_URL)
+        self.authorized_reader.get(self.FOLLOW_URL)
         response_1 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
         self.assertNotEqual(response_0.content, response_1.content)
-        response = self.authorized_reader.get(self.UNFOLLOW_URL)
+        self.authorized_reader.get(self.UNFOLLOW_URL)
         response_2 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
         self.assertEqual(response_0.content, response_2.content)
+
+    def test_group_list_page_dont_show_incorrect_context(self):
+        """Пост не попал попал подписавшимся и не попал неподписавшимся"""
+        self.authorized_reader = Client()
+        self.authorized_reader.force_login(self.reader)
+        response_follow = self.authorized_reader.get(self.FOLLOW_URL)
+        response_follow = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        post_counter_follow_0 = \
+            len(response_follow.context['page_obj'].object_list)
+
+        response_not_follow = self.authorized_client.get(self.FOLLOW_INDEX_URL)
+        post_counter_not_follow_0 = \
+            len(response_not_follow.context['page_obj'].object_list)
+
+        Post.objects.create(
+            author=self.author,
+            text='12345678901234567890',
+            group=self.group
+        )
+        response_follow = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        post_counter_follow_1 = \
+            len(response_follow.context['page_obj'].object_list)
+        response_not_follow = self.authorized_client.get(self.FOLLOW_INDEX_URL)
+        post_counter_not_follow_1 = \
+            len(response_not_follow.context['page_obj'].object_list)
+        self.assertEqual(post_counter_follow_1,
+                         post_counter_follow_0 + 1)
+        self.assertEqual(post_counter_not_follow_1,
+                         post_counter_not_follow_0)
 
 
 class PaginatorViewTest(TestCase):

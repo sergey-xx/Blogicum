@@ -43,14 +43,13 @@ class StaticPagesURLTests(TestCase):
             cls.POST_DETAILS_URL,
             cls.AUTHOR_PROFILE_URL,
             cls.GROUP_POSTS_URL,
-            # cls.LOGAUT_URL,
-            # cls.LOGIN_URL,
-            ]
+            cls.LOGAUT_URL,
+            cls.LOGIN_URL, ]
 
         cls.AUTHORITHATION_REQUIRED_URLS = [
             cls.PASSWORD_CHANGE_URL,
             cls.CREATE_URL,
-            cls.POST_EDIT_URL]
+            cls.POST_EDIT_URL, ]
 
     def setUp(self):
         # Создаем неавторизованый клиент

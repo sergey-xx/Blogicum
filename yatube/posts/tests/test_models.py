@@ -16,16 +16,15 @@ class PostModelTest(TestCase):
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='Тестовый слаг',
-            description='Тестовое описание',
-        )
+            description='Тестовое описание', )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='12345678901234567890',
-        )
+            text='12345678901234567890', )
+
     def setUp(self):
         """Очищаем кэш"""
         cache.clear()
-        
+
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         field_str = {
