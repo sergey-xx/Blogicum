@@ -139,7 +139,7 @@ def profile_follow(request, username):
                                   author__exact=author)
        and author != request.user):
         Follow.objects.create(user=request.user, author=author)
-        return redirect('posts:profile', username=username)
+    return redirect('posts:profile', username=username)
 
 
 @login_required
@@ -149,4 +149,4 @@ def profile_unfollow(request, username):
     author = User.objects.get(username=username)
     if Follow.objects.filter(user__exact=user, author__exact=author):
         Follow.objects.get(user=user, author=author).delete()
-        return redirect('posts:profile', username=username)
+    return redirect('posts:profile', username=username)
