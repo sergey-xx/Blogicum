@@ -42,6 +42,7 @@ class PostCreateFormTests(TestCase):
     def setUp(self):
         """Создаем авторизованный клиент"""
         cache.clear()
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
 
@@ -113,22 +114,19 @@ class PostCreateFormTests(TestCase):
 
     def test_comment_post(self):
         """Возможность создания комментария авторизованным пользователем"""
-        comments_count_0 = self.post.comments.all().count()
+        comments_count = self.post.comments.all().count()
         data = {'text': 'Тестовый комментарий 2'}
         self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
             data=data)
-        comments_count_1 = self.post.comments.all().count()
-        self.assertEqual(comments_count_0 + 1, comments_count_1)
-        self.assertEqual(self.post.comments.all()[1].text, data['text'])
+        self.assertEqual(comments_count + 1, self.post.comments.all().count())
+        self.assertEqual(self.post.comments.last().text, data['text'])
 
     def test_not_comment_post(self):
         """Невозможность создания комментария неавторизованным пользователем"""
-        comments_count_0 = self.post.comments.all().count()
-        guest_client = Client()
+        comments_count = self.post.comments.all().count()
         data = {'text': 'Тестовый комментарий 2'}
-        guest_client.post(
+        self.guest_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
             data=data)
-        comments_count_1 = self.post.comments.all().count()
-        self.assertEqual(comments_count_0, comments_count_1)
+        self.assertEqual(comments_count, self.post.comments.all().count())

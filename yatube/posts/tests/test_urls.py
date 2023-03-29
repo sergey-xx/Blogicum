@@ -13,6 +13,7 @@ class StaticPagesURLTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create(username='author')
+        cls.reader = User.objects.create(username='reader')
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
@@ -34,6 +35,9 @@ class StaticPagesURLTests(TestCase):
         cls.PASSWORD_CHANGE_URL = '/auth/password_change/'
         cls.CREATE_URL = '/create/'
         cls.POST_EDIT_URL = f'/posts/{cls.post.id}/edit/'
+        cls.FOLLOW_INDEX_URL = '/follow/'
+        cls.FOLLOW_URL = f'/profile/{cls.user.username}/follow/'
+        cls.UNFOLLOW_URL = f'/profile/{cls.user.username}/unfollow/'
 
         cls.FREE_TO_ACCES_URLS = [
             cls.INDEX_URL,
@@ -49,7 +53,12 @@ class StaticPagesURLTests(TestCase):
         cls.AUTHORITHATION_REQUIRED_URLS = [
             cls.PASSWORD_CHANGE_URL,
             cls.CREATE_URL,
-            cls.POST_EDIT_URL, ]
+            cls.POST_EDIT_URL,
+            cls.FOLLOW_INDEX_URL, ]
+
+        cls.FOLLOWING_URLS = [
+            cls.FOLLOW_URL,
+            cls.UNFOLLOW_URL, ]
 
     def setUp(self):
         # Создаем неавторизованый клиент
@@ -57,6 +66,8 @@ class StaticPagesURLTests(TestCase):
         self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.authorized_reader = Client()
+        self.authorized_reader.force_login(self.reader)
 
     def test_about_url_exists_at_desired_location(self):
         """Проверка доступности адресов ."""
@@ -71,6 +82,20 @@ class StaticPagesURLTests(TestCase):
             with self.subTest(tested_url=tested_url):
                 response = self.authorized_client.get(tested_url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_follow(self):
+        """Проверка доступа подписки/отписки."""
+        for tested_url in self.FOLLOWING_URLS:
+            with self.subTest(tested_url=tested_url):
+                response = self.authorized_reader.get(tested_url)
+                self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
+    def test_redirect_follow(self):
+        """Проверка переадресации при подписке/отписке"""
+        for tested_url in self.FOLLOWING_URLS:
+            with self.subTest(tested_url=tested_url):
+                response = self.authorized_reader.get(tested_url, follow=True)
+                self.assertRedirects(response, self.AUTHOR_PROFILE_URL)
 
     def test_about_url_not_exists_and_return_404(self):
         """Проверка 404 несуществующих адресов ."""
@@ -90,7 +115,7 @@ class StaticPagesURLTests(TestCase):
                 response = self.guest_client.get(tested_url, follow=True)
                 self.assertRedirects(response, expected_redirect)
 
-    def test_home_url_uses_correct_template(self):
+    def test_url_uses_correct_template(self):
         """Страница по адресу / использует шаблон..."""
         templates = {
             self.INDEX_URL: 'posts/index.html',
@@ -99,6 +124,7 @@ class StaticPagesURLTests(TestCase):
             self.POST_DETAILS_URL: 'posts/post_detail.html',
             self.AUTHOR_PROFILE_URL: 'posts/profile.html',
             self.GROUP_POSTS_URL: 'posts/group_list.html',
+            self.FOLLOW_INDEX_URL: 'posts/follow.html',
             self.LOGAUT_URL: 'users/logged_out.html',
             self.LOGIN_URL: 'users/login.html', }
 

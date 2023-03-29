@@ -5,7 +5,7 @@ from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
 
-from posts.models import Group, Post, Comment
+from posts.models import Group, Post, Comment, Follow
 from django.conf import settings
 
 User = get_user_model()
@@ -77,6 +77,8 @@ class PostsPagesTests(TestCase):
         cache.clear()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.author)
+        self.authorized_reader = Client()
+        self.authorized_reader.force_login(self.reader)
 
     def test_pages_use_correct_template(self):
         """view-функция использует верный шаблон """
@@ -141,8 +143,8 @@ class PostsPagesTests(TestCase):
             description='Тестовое описание 2',
         )
         response_gr1_before = self.authorized_client.get(self.GROUP_LIST_URL)
-        post_counter_gr1_before = \
-            len(response_gr1_before.context['page_obj'].object_list)
+        post_counter_gr1_before = (len(response_gr1_before.context['page_obj'].
+                                       object_list))
 
         response_gr2_before = self.authorized_client.get(
             reverse('posts:group_list', kwargs={'slug': group_2.slug}))
@@ -188,7 +190,7 @@ class PostsPagesTests(TestCase):
             post_text: self.post.text,
             post_author: self.post.author.username,
             post_image: self.post.image,
-            post_amount: 1,
+            post_amount: Post.objects.all().count(),
             post_comment: self.post.comments.first()
         }
         for tested_data, ref_data in post_detail_data.items():
@@ -219,54 +221,62 @@ class PostsPagesTests(TestCase):
 
     def test_cache(self):
         """Проверка, что пост остается в кэше при удалении из базы"""
-        response_0 = self.authorized_client.get(self.INDEX_URL)
+        response = self.authorized_client.get(self.INDEX_URL)
         Post.objects.all().delete()
-        response_1 = self.authorized_client.get(self.INDEX_URL)
-        self.assertEqual(response_0.content, response_1.content)
+        self.assertEqual(response.content,
+                         self.authorized_client.get(self.INDEX_URL).content)
         cache.clear()
-        response_2 = self.authorized_client.get(self.INDEX_URL)
-        self.assertNotEqual(response_0.content, response_2.content)
+        self.assertNotEqual(response.content,
+                            self.authorized_client.get(self.INDEX_URL).content)
 
     def test_follow(self):
-        """Тестирование подписки и отписки"""
-        self.authorized_reader = Client()
-        self.authorized_reader.force_login(self.reader)
-        response_0 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        """Тестирование подписки"""
+        response = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
         self.authorized_reader.get(self.FOLLOW_URL)
-        response_1 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
-        self.assertNotEqual(response_0.content, response_1.content)
+        self.assertNotEqual(
+            response.content,
+            self.authorized_reader.get(self.FOLLOW_INDEX_URL).content)
+
+    def test_unfollow(self):
+        """Тестирование отписки"""
+        Follow.objects.create(user=self.reader, author=self.author)
+        response = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
         self.authorized_reader.get(self.UNFOLLOW_URL)
-        response_2 = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
-        self.assertEqual(response_0.content, response_2.content)
+        self.assertNotEqual(
+            response.content,
+            self.authorized_reader.get(self.FOLLOW_INDEX_URL).content)
 
-    def test_group_list_page_dont_show_incorrect_context(self):
-        """Пост не попал попал подписавшимся и не попал неподписавшимся"""
-        self.authorized_reader = Client()
-        self.authorized_reader.force_login(self.reader)
-        response_follow = self.authorized_reader.get(self.FOLLOW_URL)
+    def test_follow_index_page_shows(self):
+        """Пост попал подписавшимся"""
+        Follow.objects.create(user=self.reader, author=self.author)
         response_follow = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
-        post_counter_follow_0 = \
-            len(response_follow.context['page_obj'].object_list)
+        post_counter_follow = (
+            len(response_follow.context['page_obj'].object_list))
 
+        Post.objects.create(
+            author=self.author,
+            text='12345678901234567890',
+            group=self.group)
+
+        response_follow = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        self.assertEqual(
+            len(response_follow.context['page_obj'].object_list),
+            post_counter_follow + 1)
+
+    def test_follow_index_page_not_shows(self):
+        """Пост не попал неподписавшимся"""
         response_not_follow = self.authorized_client.get(self.FOLLOW_INDEX_URL)
-        post_counter_not_follow_0 = \
-            len(response_not_follow.context['page_obj'].object_list)
-
+        post_counter_not_follow = (
+            len(response_not_follow.context['page_obj'].object_list))
         Post.objects.create(
             author=self.author,
             text='12345678901234567890',
             group=self.group
         )
-        response_follow = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
-        post_counter_follow_1 = \
-            len(response_follow.context['page_obj'].object_list)
         response_not_follow = self.authorized_client.get(self.FOLLOW_INDEX_URL)
-        post_counter_not_follow_1 = \
-            len(response_not_follow.context['page_obj'].object_list)
-        self.assertEqual(post_counter_follow_1,
-                         post_counter_follow_0 + 1)
-        self.assertEqual(post_counter_not_follow_1,
-                         post_counter_not_follow_0)
+        self.assertEqual(
+            len(response_not_follow.context['page_obj'].object_list),
+            post_counter_not_follow)
 
 
 class PaginatorViewTest(TestCase):

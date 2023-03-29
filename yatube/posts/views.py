@@ -44,13 +44,10 @@ def profile(request, username):
     posts = Post.objects.select_related('author').filter(author=author)
     post_amount = posts.count()
     page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
-    following = True
-    if request.user.is_authenticated:
-        user = User.objects.get(username=request.user)
-        if Follow.objects.filter(user__exact=user, author__exact=author):
-            following = True
-        else:
-            following = False
+    following = (
+        request.user.is_authenticated
+        and Follow.objects.filter(user=request.user, author__exact=author)
+    )
     context = {'page_obj': page_obj,
                'author': author,
                'post_amount': post_amount,
@@ -64,7 +61,7 @@ def post_create(request):
     """Позволяет создавать новые посты и выбирать теги"""
     form = PostForm(request.POST or None, files=request.FILES or None)
 
-    if request.method == 'GET' or not form.is_valid():
+    if not form.is_valid():
         return render(request, 'posts/post_create_form.html', {'form': form})
 
     form.instance.author = request.user
@@ -77,8 +74,9 @@ def post_create(request):
 def post_detail(request, post_id):
     """Отображает полный текст поста и детали"""
     post = get_object_or_404(Post, id=post_id)
-    post_amount = Post.objects.select_related('author').\
-        filter(author=post.author).count()
+    post_amount = (
+        Post.objects.select_related('author').
+        filter(author=post.author).count())
     form = CommentForm(request.POST or None)
     context = {'post': post,
                'post_amount': post_amount,
@@ -133,20 +131,16 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     """Подписаться на автора"""
-    # user = User.objects.get(username=request.user)
-    author = User.objects.get(username=username)
-    if (not Follow.objects.filter(user__exact=request.user,
-                                  author__exact=author)
-       and author != request.user):
-        Follow.objects.create(user=request.user, author=author)
+    author = get_object_or_404(User, username=username)
+    follow, created = Follow.objects.get_or_create(
+        user=request.user,
+        author=author)
     return redirect('posts:profile', username=username)
 
 
 @login_required
 def profile_unfollow(request, username):
     """Отписаться от автора"""
-    user = User.objects.get(username=request.user)
-    author = User.objects.get(username=username)
-    if Follow.objects.filter(user__exact=user, author__exact=author):
-        Follow.objects.get(user=user, author=author).delete()
+    author = get_object_or_404(User, username=username)
+    Follow.objects.get(user=request.user, author=author).delete()
     return redirect('posts:profile', username=username)
