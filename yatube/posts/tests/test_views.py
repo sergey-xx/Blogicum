@@ -232,19 +232,24 @@ class PostsPagesTests(TestCase):
     def test_follow(self):
         """Тестирование подписки"""
         response = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        post_counter = len(response.context['page_obj'].object_list)
         self.authorized_reader.get(self.FOLLOW_URL)
-        self.assertNotEqual(
-            response.content,
-            self.authorized_reader.get(self.FOLLOW_INDEX_URL).content)
+        response = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        self.assertEqual(
+            post_counter + 1,
+            len(response.context['page_obj'].object_list))
+        follow = Follow.objects.last()
+        self.assertEqual(follow.author, self.author)
+        self.assertEqual(follow.user, self.reader)
 
     def test_unfollow(self):
         """Тестирование отписки"""
         Follow.objects.create(user=self.reader, author=self.author)
-        response = self.authorized_reader.get(self.FOLLOW_INDEX_URL)
+        counter = Follow.objects.all().count()
         self.authorized_reader.get(self.UNFOLLOW_URL)
-        self.assertNotEqual(
-            response.content,
-            self.authorized_reader.get(self.FOLLOW_INDEX_URL).content)
+        self.assertEqual(counter - 1, Follow.objects.all().count())
+        follow = Follow.objects.filter(user=self.reader, author=self.author)
+        self.assertQuerysetEqual(follow, [])
 
     def test_follow_index_page_shows(self):
         """Пост попал подписавшимся"""

@@ -100,10 +100,10 @@ class PostCreateFormTests(TestCase):
     def test_not_create_post(self):
         """Невозможность создания поста неавторизованным пользователем"""
         post_count = Post.objects.count()
-        guest_client = Client()
+        # self.guest_client = Client()
         form_data = {'text': 'some_text2',
                      'group': self.group.id}
-        response = guest_client.post(
+        response = self.guest_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True)
@@ -121,12 +121,17 @@ class PostCreateFormTests(TestCase):
             data=data)
         self.assertEqual(comments_count + 1, self.post.comments.all().count())
         self.assertEqual(self.post.comments.last().text, data['text'])
+        self.assertEqual(self.post.comments.last().author, self.author)
 
     def test_not_comment_post(self):
         """Невозможность создания комментария неавторизованным пользователем"""
         comments_count = self.post.comments.all().count()
         data = {'text': 'Тестовый комментарий 2'}
-        self.guest_client.post(
+        response = self.guest_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
             data=data)
         self.assertEqual(comments_count, self.post.comments.all().count())
+        expected_redirect = (reverse('users:login') + '?next='
+                             + reverse('posts:add_comment',
+                                       kwargs={'post_id': self.post.id}))
+        self.assertRedirects(response, expected_redirect)
