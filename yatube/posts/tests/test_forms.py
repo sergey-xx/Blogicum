@@ -100,7 +100,6 @@ class PostCreateFormTests(TestCase):
     def test_not_create_post(self):
         """Невозможность создания поста неавторизованным пользователем"""
         post_count = Post.objects.count()
-        # self.guest_client = Client()
         form_data = {'text': 'some_text2',
                      'group': self.group.id}
         response = self.guest_client.post(
@@ -119,9 +118,10 @@ class PostCreateFormTests(TestCase):
         self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
             data=data)
+        last_comment = self.post.comments.last()
         self.assertEqual(comments_count + 1, self.post.comments.all().count())
-        self.assertEqual(self.post.comments.last().text, data['text'])
-        self.assertEqual(self.post.comments.last().author, self.author)
+        self.assertEqual(last_comment.text, data['text'])
+        self.assertEqual(last_comment.author, self.author)
 
     def test_not_comment_post(self):
         """Невозможность создания комментария неавторизованным пользователем"""

@@ -46,7 +46,7 @@ def profile(request, username):
     page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
     following = (
         request.user.is_authenticated
-        and Follow.objects.filter(user=request.user, author__exact=author)
+        and Follow.objects.filter(user=request.user, author=author)
     )
     context = {'page_obj': page_obj,
                'author': author,
@@ -133,7 +133,7 @@ def profile_follow(request, username):
     """Подписаться на автора"""
     author = get_object_or_404(User, username=username)
     if author != request.user:
-        follow, created = Follow.objects.get_or_create(
+        Follow.objects.get_or_create(
             user=request.user,
             author=author)
     return redirect('posts:profile', username=username)

@@ -21,10 +21,6 @@ class PostModelTest(TestCase):
             author=cls.user,
             text='12345678901234567890', )
 
-    def setUp(self):
-        """Очищаем кэш"""
-        cache.clear()
-
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         field_str = {
