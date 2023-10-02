@@ -92,12 +92,12 @@ class Follow(models.Model):
             name='unique_following'
         )]
 
+
 class Like(models.Model):
     user = models.ForeignKey(
         User,
         related_name='liker',
         on_delete=models.CASCADE,
-        
     )
 
     post = models.ForeignKey(
