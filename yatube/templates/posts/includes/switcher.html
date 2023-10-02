@@ -1,5 +1,6 @@
 {% if user.is_authenticated %}
-  <div class="row my-3">
+<div class="container py-3">
+  {% comment %} <div class="row my-3"> {% endcomment %}
     <ul class="nav nav-tabs">
       <li class="nav-item">
         <a 
@@ -18,5 +19,6 @@
         </a>
       </li>
     </ul>
-  </div>
+  {% comment %} </div> {% endcomment %}
+</div>
 {% endif %}

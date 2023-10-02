@@ -6,6 +6,13 @@
     
 {% block content %}
 {% include 'posts/includes/switcher.html' %}
+  <script>
+    let cords = ['scrollX','scrollY'];
+    // Перед закрытием записываем в локалсторадж window.scrollX и window.scrollY как scrollX и scrollY
+    window.addEventListener('unload', e => cords.forEach(cord => localStorage[cord] = window[cord]));
+    // Прокручиваем страницу к scrollX и scrollY из localStorage (либо 0,0 если там еще ничего нет)
+    window.scroll(...cords.map(cord => localStorage[cord]));
+  </script>
   <div class="container py-5">     
     {% for post in page_obj %}
       <ul>
@@ -23,9 +30,18 @@
       <p>
         <a href="{% url 'posts:post_detail' post.id %}">подробная информация </a>
       </p>    
-      {% if post.group %}   
-        <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы {{ post.group.title }} </a> 
+      {% if post.group %}
+        <p>
+          <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы {{ post.group.title }} </a>
+        </p>
       {% endif %}
+      <a class="btn btn-primary" href="{% url 'posts:post_like' post_id=post.id %}">
+        {% if not post.is_liked %}
+          ♡ {{ post.like_amount }}
+        {% else %}
+          ♥ {{ post.like_amount }}
+        {% endif %}
+      </a>
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
     {% include 'posts/includes/paginator.html' %} 

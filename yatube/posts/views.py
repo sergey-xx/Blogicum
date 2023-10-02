@@ -3,9 +3,10 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.views.decorators.cache import cache_page
+from django.http import HttpResponseRedirect
 
 from django.conf import settings
-from .models import Group, Post, User, Follow
+from .models import Group, Post, User, Follow, Like
 from .forms import PostForm, CommentForm
 
 
@@ -14,6 +15,23 @@ def pagination(request, some_objs, obj_on_page):
     paginator = Paginator(some_objs, obj_on_page)
     page_number = request.GET.get('page')
     return paginator.get_page(page_number)
+
+
+# @cache_page(20, key_prefix='index_page')
+def index(request):
+    """Отображает посты в хронологическом порядке"""
+    posts = Post.objects.all()
+    print(request.user)
+    if request.user.is_authenticated:
+        for post in posts:
+            post.like_amount = Like.objects.filter(user=request.user, post=post).count()
+            is_liked = (Like.objects.filter(user=request.user, post=post).first())
+            if is_liked:
+                post.is_liked = True
+    page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
+    context = {'page_obj': page_obj}
+    template = 'posts/index.html'
+    return render(request, template, context)
 
 
 def group_posts(request, slug):
@@ -26,16 +44,6 @@ def group_posts(request, slug):
         'page_obj': page_obj,
     }
     return render(request, 'posts/group_list.html', context)
-
-
-@cache_page(20, key_prefix='index_page')
-def index(request):
-    """Отображает посты в хронологическом порядке"""
-    posts = Post.objects.all()
-    page_obj = pagination(request, posts, settings.POSTS_ON_PAGE)
-    context = {'page_obj': page_obj, }
-    template = 'posts/index.html'
-    return render(request, template, context)
 
 
 def profile(request, username):
@@ -77,16 +85,36 @@ def post_detail(request, post_id):
     post_amount = (
         Post.objects.select_related('author').
         filter(author=post.author).count())
+    post.like_amount = Like.objects.filter(post=post).count()
     form = CommentForm(request.POST or None)
+    already_liked = Like.objects.filter(user=request.user, post=post).count()
+    if already_liked:
+        post.is_liked = True
     context = {'post': post,
                'post_amount': post_amount,
                'comments': post.comments.all(),
-               'form': form}
+               'form': form,}
     return render(request, 'posts/post_detail.html', context)
 
 
 @login_required
+def post_like(request, post_id):
+    """Позволяет ставить постам нравлики"""
+    print(request)
+    post = get_object_or_404(Post, id=post_id)
+    existing_like = Like.objects.filter(user=request.user, post=post).first()
+    if not existing_like:
+        Like(user=request.user, post=post).save()
+        # return redirect('posts:post_detail', post_id=post_id)
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    existing_like.delete()
+    # return redirect('posts:post_detail', post_id=post_id)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+@login_required
 def post_edit(request, post_id):
+    """Редактирования поста"""
     post = get_object_or_404(Post, id=post_id)
     if post.author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
@@ -109,6 +137,7 @@ def post_edit(request, post_id):
 
 @login_required
 def add_comment(request, post_id):
+    """Позволяет добавлять комментарии к постам"""
     post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():

@@ -39,6 +39,9 @@ class Post(models.Model):
         null=True
     )
 
+    is_liked = False
+    like_amount = None
+
     def __str__(self) -> str:
         return self.text[:settings.SHORT_POST_LENGTH]
 
@@ -86,5 +89,27 @@ class Follow(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(
             fields=['user', 'author'],
-            name='unique_pair'
+            name='unique_following'
+        )]
+
+class Like(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='liker',
+        on_delete=models.CASCADE,
+        
+    )
+
+    post = models.ForeignKey(
+        Post,
+        related_name='post_like',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['user', 'post'],
+            name='unique_like'
         )]
