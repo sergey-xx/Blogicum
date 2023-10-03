@@ -24,7 +24,7 @@ def index(request):
     print(request.user)
     if request.user.is_authenticated:
         for post in posts:
-            post.like_amount = Like.objects.filter(user=request.user, post=post).count()
+            post.like_amount = Like.objects.filter(post=post).count()
             is_liked = (Like.objects.filter(user=request.user, post=post).first())
             if is_liked:
                 post.is_liked = True
