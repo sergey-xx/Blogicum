@@ -46,14 +46,14 @@
         <a class="btn btn-primary" href="{% url 'posts:post_edit' post_id=post.id %}">
           редактировать запись
         </a>
-        <a class="btn btn-primary" href="{% url 'posts:post_like' post_id=post.id %}">
-          {% if not post.is_liked %}
-            ♡ {{ post.like_amount }}
-          {% else %}
-            ♥ {{ post.like_amount }}
-          {% endif %}
-        </a>
+      {% endif %}
+      <a class="btn btn-primary" href="{% url 'posts:post_like' post_id=post.id %}">
+        {% if not post.is_liked %}
+          ♡ {{ post.like_amount }}
+        {% else %}
+          ♥ {{ post.like_amount }}
         {% endif %}
+      </a>
       </article>
   </div>
 {% include 'posts/includes/comments.html' %} 

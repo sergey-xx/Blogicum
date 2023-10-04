@@ -35,7 +35,7 @@
           <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы {{ post.group.title }} </a>
         </p>
       {% endif %}
-      {% if request.user.is_authenticated %}
+      {% comment %} {% if request.user.is_authenticated %} {% endcomment %}
       <a class="btn btn-primary" href="{% url 'posts:post_like' post_id=post.id %}">
         {% if not post.is_liked %}
         ♡ {{ post.like_amount }}
@@ -43,7 +43,7 @@
         ♥ {{ post.like_amount }}
         {% endif %}
       </a>
-      {% endif %}
+      {% comment %} {% endif %} {% endcomment %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
     {% include 'posts/includes/paginator.html' %} 

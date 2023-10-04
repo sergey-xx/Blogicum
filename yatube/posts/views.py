@@ -22,9 +22,10 @@ def index(request):
     """Отображает посты в хронологическом порядке"""
     posts = Post.objects.all()
     print(request.user)
+    for post in posts:
+            post.like_amount = Like.objects.filter(post=post).count()
     if request.user.is_authenticated:
         for post in posts:
-            post.like_amount = Like.objects.filter(post=post).count()
             is_liked = (Like.objects.filter(user=request.user, post=post).first())
             if is_liked:
                 post.is_liked = True
@@ -85,11 +86,12 @@ def post_detail(request, post_id):
     post_amount = (
         Post.objects.select_related('author').
         filter(author=post.author).count())
-    post.like_amount = Like.objects.filter(post=post).count()
     form = CommentForm(request.POST or None)
-    already_liked = Like.objects.filter(user=request.user, post=post).count()
-    if already_liked:
-        post.is_liked = True
+    post.like_amount = Like.objects.filter(post=post).count()
+    if request.user.is_authenticated:
+        already_liked = Like.objects.filter(user=request.user, post=post).count()
+        if already_liked:
+            post.is_liked = True
     context = {'post': post,
                'post_amount': post_amount,
                'comments': post.comments.all(),
