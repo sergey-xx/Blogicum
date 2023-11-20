@@ -18,7 +18,7 @@
 ## Как запустить проект в тестовом режиме.
 Клонировать проект на жесткий диск.
 ```
-git@github.com:sergey-xx/Blogicum.git
+git clone git@github.com:sergey-xx/Blogicum.git
 ```
 
 ### Backend
